@@ -122,6 +122,7 @@ def show_style_analysis(df):
 def show_district_analysis(df):
     st.title("School District Housing Price Comparison")
 
+
     with st.expander("📋 Data Collection Criteria", expanded=True):
         st.markdown("""
         ### Search Parameters Used:
@@ -129,6 +130,8 @@ def show_district_analysis(df):
         - **Time Frame:** Sold within last 720 days
         - **Location:** Sumner-Bonney Lake School District or Dieringer School District
         """)
+
+        #comment
 
     st.warning("""
         📢 **Important Note:** This analysis represents typical home sales in the area. 
