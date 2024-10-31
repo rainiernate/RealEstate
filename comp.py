@@ -22,16 +22,18 @@ with st.expander("📋 Data Collection Criteria", expanded=True):
     """)
 
 
-# Rest of your existing code remains the same
 @st.cache_data
 def load_data():
     df = pd.read_csv("Sold And Stats.csv")
     # Convert price and sqft to numeric, removing commas
     df['Selling Price'] = pd.to_numeric(df['Selling Price'].replace(',', '', regex=True), errors='coerce')
     df['Square Footage'] = pd.to_numeric(df['Square Footage'].replace(',', '', regex=True), errors='coerce')
+    # Ensure listing number is stored as a string without commas
+    df['Listing Number'] = df['Listing Number'].astype(str).replace(',', '', regex=True)
     # Calculate price per sqft
     df['Price/SqFt'] = df['Selling Price'] / df['Square Footage']
     return df
+
 
 
 df = load_data()
@@ -83,19 +85,45 @@ with col2:
     st.plotly_chart(fig_ppsf, use_container_width=True)
 
 # Scatter plot
-fig_scatter = px.scatter(df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story'])],
-                         x='Square Footage',
-                         y='Selling Price',
-                         color='Style Code',
-                         title='Price vs Square Footage by Home Type',
-                         labels={'Selling Price': 'Selling Price ($)',
-                                 'Square Footage': 'Square Footage',
-                                 'Style Code': 'Home Type'})
+# Update the scatter plot section with hover data
+fig_scatter = px.scatter(
+    df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story'])],
+    x='Square Footage',
+    y='Selling Price',
+    color='Style Code',
+    title='Price vs Square Footage by Home Type',
+    labels={
+        'Selling Price': 'Selling Price ($)',
+        'Square Footage': 'Square Footage',
+        'Style Code': 'Home Type',
+        'Listing Number': 'MLS #'  # Add label for MLS number
+    },
+    hover_data={
+        'Listing Number': True,  # Add MLS number to hover
+        'Selling Price': ':$,.0f',  # Format price with comma and no decimals
+        'Square Footage': ':,.0f',  # Format sqft with comma
+        'Style Code': True
+    }
+)
+
+# Update layout for better hover display
+fig_scatter.update_traces(
+    hovertemplate="<br>".join([
+        "MLS #: %{customdata[0]}",
+        "Price: %{y:$,.0f}",
+        "SqFt: %{x:,.0f}",
+        "Type: %{customdata[3]}"
+    ])
+)
+
 st.plotly_chart(fig_scatter, use_container_width=True)
 
 # Raw data viewer
 st.subheader("Raw Data")
-st.dataframe(df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story'])].sort_values('Selling Price', ascending=False))
+# Create a copy of the dataframe with Listing Number formatted as a plain string
+df_display = df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story'])].sort_values('Selling Price', ascending=False)
+df_display['Listing Number'] = df_display['Listing Number'].astype(str).replace(',', '', regex=True)
+st.dataframe(df_display)
 
 # Download button for CSV
 csv = df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story'])].to_csv(index=False)
