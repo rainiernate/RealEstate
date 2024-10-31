@@ -9,7 +9,7 @@ st.set_page_config(page_title="Real Estate Analysis", layout="wide")
 
 @st.cache_data
 def load_style_data():
-    df = pd.read_csv("Sold And Stats.csv")
+    df = pd.read_csv("Sold And StatsRamblerTwoStory.csv")
     df['Selling Price'] = pd.to_numeric(df['Selling Price'].replace(',', '', regex=True), errors='coerce')
     df['Square Footage'] = pd.to_numeric(df['Square Footage'].replace(',', '', regex=True), errors='coerce')
     df['Listing Number'] = df['Listing Number'].astype(str).replace(',', '', regex=True)
