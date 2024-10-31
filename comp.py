@@ -19,8 +19,8 @@ def load_style_data():
 
 @st.cache_data
 def load_district_data():
-    df_dieringer = pd.read_csv("Sold and Stats (1).csv")  # Dieringer data
-    df_sumner = pd.read_csv("Sold and Stats (2).csv")  # Sumner data
+    df_dieringer = pd.read_csv("Sold And StatsSchool-Dieringer.csv")  # Dieringer data
+    df_sumner = pd.read_csv("Sold And Stats-Sumner.csv")  # Sumner data
 
     def convert_price(value):
         if pd.isna(value):
