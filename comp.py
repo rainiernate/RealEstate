@@ -153,11 +153,6 @@ def show_district_analysis(df):
         st.metric("Avg Sumner $/SqFt", f"${sumner_price_sqft:.2f}")
         st.metric("Dieringer Premium", f"{premium:.1f}%")
 
-    st.warning("""
-        📢 **Important Note:** This analysis represents typical home sales in the area. 
-        Premium or luxury properties may command different premiums than shown here.
-    """)
-
     col1, col2 = st.columns(2)
     with col1:
         fig_box = go.Figure()
