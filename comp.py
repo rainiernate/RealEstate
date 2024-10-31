@@ -8,10 +8,21 @@ st.set_page_config(page_title="Real Estate Analysis", layout="wide")
 
 # Title and description
 st.title("Bonney Lake Real Estate Analysis: Rambler vs 2-Story Homes")
-st.markdown("Analysis of home sales comparing single-story and two-story properties")
+
+# Add search criteria in an expander
+with st.expander("📋 Data Collection Criteria", expanded=True):
+    st.markdown("""
+    ### Search Parameters Used:
+    - **Square Footage:** 1,800 - 2,200 sq ft
+    - **Time Frame:** Sold within last 720 days
+    - **Location:** Bonney Lake (98391)
+    - **Home Types:** Single Story (Rambler) and Two Story homes only
+
+    *Analysis based on MLS data pulled October 2024*
+    """)
 
 
-# Load and process data
+# Rest of your existing code remains the same
 @st.cache_data
 def load_data():
     df = pd.read_csv("Sold And Stats.csv")
@@ -60,7 +71,7 @@ with col1:
     fig_price.add_trace(go.Box(y=two_story['Selling Price'], name='2-Story'))
     fig_price.update_layout(title='Price Distribution by Home Type',
                             yaxis_title='Selling Price ($)')
-    st.plotly_chart(fig_price)
+    st.plotly_chart(fig_price, use_container_width=True)
 
 with col2:
     # Box plot of price per square foot
@@ -69,7 +80,7 @@ with col2:
     fig_ppsf.add_trace(go.Box(y=two_story['Price/SqFt'], name='2-Story'))
     fig_ppsf.update_layout(title='Price per SqFt Distribution by Home Type',
                            yaxis_title='Price per Square Foot ($)')
-    st.plotly_chart(fig_ppsf)
+    st.plotly_chart(fig_ppsf, use_container_width=True)
 
 # Scatter plot
 fig_scatter = px.scatter(df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story'])],
@@ -80,7 +91,7 @@ fig_scatter = px.scatter(df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story
                          labels={'Selling Price': 'Selling Price ($)',
                                  'Square Footage': 'Square Footage',
                                  'Style Code': 'Home Type'})
-st.plotly_chart(fig_scatter)
+st.plotly_chart(fig_scatter, use_container_width=True)
 
 # Raw data viewer
 st.subheader("Raw Data")
