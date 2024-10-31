@@ -4,175 +4,190 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
-
 st.set_page_config(page_title="Real Estate Analysis", layout="wide")
-
-# Title and description
-st.title("Bonney Lake Real Estate Analysis: Rambler vs 2-Story Homes")
-
-# Add search criteria in an expander
-with st.expander("📋 Data Collection Criteria", expanded=True):
-    st.markdown("""
-    ### Search Parameters Used:
-    - **Square Footage:** 1,800 - 2,200 sq ft
-    - **Time Frame:** Sold within last 720 days
-    - **Location:** Bonney Lake (98391)
-    - **Home Types:** Single Story (Rambler) and Two Story homes only
-
-    *Analysis based on MLS data pulled October 2024*
-    """)
-
-# Add disclaimer
-st.warning("""
-    📢 **Important Note:** 
-    This analysis represents typical rambler vs 2-story sales in the area. Premium or luxury properties 
-    (like ramblers with large lot sizes, highly desirable sub-communities, detached garages or high-end finishes) may command different premiums than shown here. 
-    This data should be used as a general market reference only, not for specific property valuations.
-""")
 
 
 @st.cache_data
-def load_data():
+def load_style_data():
     df = pd.read_csv("Sold And Stats.csv")
-    # Convert price and sqft to numeric, removing commas
     df['Selling Price'] = pd.to_numeric(df['Selling Price'].replace(',', '', regex=True), errors='coerce')
     df['Square Footage'] = pd.to_numeric(df['Square Footage'].replace(',', '', regex=True), errors='coerce')
-    # Ensure listing number is stored as a string without commas
     df['Listing Number'] = df['Listing Number'].astype(str).replace(',', '', regex=True)
-    # Calculate price per sqft
     df['Price/SqFt'] = df['Selling Price'] / df['Square Footage']
     return df
 
 
+@st.cache_data
+def load_district_data():
+    df_dieringer = pd.read_csv("Sold and Stats (1).csv")  # Dieringer data
+    df_sumner = pd.read_csv("Sold and Stats (2).csv")  # Sumner data
 
-df = load_data()
+    def convert_price(value):
+        if pd.isna(value):
+            return np.nan
+        if isinstance(value, str):
+            return float(value.replace(',', '').replace('$', ''))
+        return float(value)
 
-# Filter for 1 and 2 story homes
-one_story = df[df['Style Code'] == '10 - 1 Story']
-two_story = df[df['Style Code'] == '12 - 2 Story']
+    def convert_sqft(value):
+        if pd.isna(value):
+            return np.nan
+        if isinstance(value, str):
+            return float(value.replace(',', ''))
+        return float(value)
 
-# Create three columns for metrics
-col1, col2, col3 = st.columns(3)
+    for df in [df_dieringer, df_sumner]:
+        df['Selling Price'] = df['Selling Price'].apply(convert_price)
+        df['Square Footage'] = df['Square Footage'].apply(convert_sqft)
+        df['Price_per_SqFt'] = df['Selling Price'] / df['Square Footage']
 
-# Calculate and display key metrics
-with col1:
-    st.metric("Number of Ramblers", f"{len(one_story)}")
-    st.metric("Number of 2-Story", f"{len(two_story)}")
+    df_dieringer['District'] = 'Dieringer'
+    df_sumner['District'] = 'Sumner-Bonney Lake'
 
-with col2:
-    st.metric("Avg Rambler Price", f"${one_story['Selling Price'].mean():,.0f}")
-    st.metric("Avg 2-Story Price", f"${two_story['Selling Price'].mean():,.0f}")
-
-with col3:
-    rambler_price_sqft = one_story['Price/SqFt'].mean()
-    two_story_price_sqft = two_story['Price/SqFt'].mean()
-    premium = ((rambler_price_sqft - two_story_price_sqft) / two_story_price_sqft) * 100
-
-    st.metric("Avg Rambler $/SqFt", f"${rambler_price_sqft:.2f}")
-    st.metric("Avg 2-Story $/SqFt", f"${two_story_price_sqft:.2f}")
-    st.metric("Rambler Premium", f"{premium:.1f}%")
-
-# Create two columns for charts
-col1, col2 = st.columns(2)
-
-with col1:
-    # Box plot of prices with Listing Number in hover data
-    fig_price = go.Figure()
-    fig_price.add_trace(
-        go.Box(
-            y=one_story['Selling Price'],
-            name='Ramblers',
-            customdata=one_story['Listing Number'],  # Add Listing Number as custom data
-            hovertemplate="Listing #: %{customdata}<br>Price: $%{y:,.0f}"  # Use hovertemplate to display
-        )
-    )
-    fig_price.add_trace(
-        go.Box(
-            y=two_story['Selling Price'],
-            name='2-Story',
-            customdata=two_story['Listing Number'],  # Add Listing Number as custom data
-            hovertemplate="Listing #: %{customdata}<br>Price: $%{y:,.0f}"
-        )
-    )
-    fig_price.update_layout(
-        title='Price Distribution by Home Type',
-        yaxis_title='Selling Price ($)'
-    )
-    st.plotly_chart(fig_price, use_container_width=True)
+    return pd.concat([df_sumner, df_dieringer], ignore_index=True)
 
 
-with col2:
-    # Box plot of price per square foot with Listing Number in hover data
-    fig_ppsf = go.Figure()
-    fig_ppsf.add_trace(
-        go.Box(
-            y=one_story['Price/SqFt'],
-            name='Ramblers',
-            customdata=one_story['Listing Number'],  # Add Listing Number as custom data
-            hovertemplate="Listing #: %{customdata}<br>$/SqFt: $%{y:.2f}"
-        )
-    )
-    fig_ppsf.add_trace(
-        go.Box(
-            y=two_story['Price/SqFt'],
-            name='2-Story',
-            customdata=two_story['Listing Number'],  # Add Listing Number as custom data
-            hovertemplate="Listing #: %{customdata}<br>$/SqFt: $%{y:.2f}"
-        )
-    )
-    fig_ppsf.update_layout(
-        title='Price per SqFt Distribution by Home Type',
-        yaxis_title='Price per Square Foot ($)'
-    )
-    st.plotly_chart(fig_ppsf, use_container_width=True)
+def show_style_analysis(df):
+    st.title("Bonney Lake Real Estate Analysis: Rambler vs 2-Story Homes")
+
+    with st.expander("📋 Data Collection Criteria", expanded=True):
+        st.markdown("""
+        ### Search Parameters Used:
+        - **Square Footage:** 1,800 - 2,200 sq ft
+        - **Time Frame:** Sold within last 720 days
+        - **Location:** Bonney Lake (98391)
+        - **Home Types:** Single Story (Rambler) and Two Story homes only
+        """)
+
+    st.warning("""
+        📢 **Important Note:** This analysis represents typical rambler vs 2-story sales in the area. 
+        Premium or luxury properties may command different premiums than shown here.
+    """)
+
+    one_story = df[df['Style Code'] == '10 - 1 Story']
+    two_story = df[df['Style Code'] == '12 - 2 Story']
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Number of Ramblers", f"{len(one_story)}")
+        st.metric("Number of 2-Story", f"{len(two_story)}")
+    with col2:
+        st.metric("Avg Rambler Price", f"${one_story['Selling Price'].mean():,.0f}")
+        st.metric("Avg 2-Story Price", f"${two_story['Selling Price'].mean():,.0f}")
+    with col3:
+        rambler_price_sqft = one_story['Price/SqFt'].mean()
+        two_story_price_sqft = two_story['Price/SqFt'].mean()
+        premium = ((rambler_price_sqft - two_story_price_sqft) / two_story_price_sqft) * 100
+        st.metric("Avg Rambler $/SqFt", f"${rambler_price_sqft:.2f}")
+        st.metric("Avg 2-Story $/SqFt", f"${two_story_price_sqft:.2f}")
+        st.metric("Rambler Premium", f"{premium:.1f}%")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        fig_price = go.Figure()
+        fig_price.add_trace(go.Box(y=one_story['Selling Price'], name='Ramblers',
+                                   customdata=one_story['Listing Number'],
+                                   hovertemplate="MLS #: %{customdata}<br>Price: $%{y:,.0f}"))
+        fig_price.add_trace(go.Box(y=two_story['Selling Price'], name='2-Story',
+                                   customdata=two_story['Listing Number'],
+                                   hovertemplate="MLS #: %{customdata}<br>Price: $%{y:,.0f}"))
+        fig_price.update_layout(title='Price Distribution by Home Type', yaxis_title='Selling Price ($)')
+        st.plotly_chart(fig_price, use_container_width=True)
+
+    with col2:
+        fig_ppsf = go.Figure()
+        fig_ppsf.add_trace(go.Box(y=one_story['Price/SqFt'], name='Ramblers',
+                                  customdata=one_story['Listing Number'],
+                                  hovertemplate="MLS #: %{customdata}<br>$/SqFt: $%{y:.2f}"))
+        fig_ppsf.add_trace(go.Box(y=two_story['Price/SqFt'], name='2-Story',
+                                  customdata=two_story['Listing Number'],
+                                  hovertemplate="MLS #: %{customdata}<br>$/SqFt: $%{y:.2f}"))
+        fig_ppsf.update_layout(title='Price per SqFt Distribution', yaxis_title='Price per Square Foot ($)')
+        st.plotly_chart(fig_ppsf, use_container_width=True)
+
+    filtered_df = df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story'])]
+    fig_scatter = px.scatter(filtered_df, x='Square Footage', y='Selling Price',
+                             color='Style Code', title='Price vs Square Footage',
+                             hover_data={'Listing Number': True, 'Selling Price': ':$,.0f',
+                                         'Square Footage': ':,.0f', 'Style Code': True})
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+    st.subheader("Raw Data")
+    df_display = filtered_df.sort_values('Selling Price', ascending=False)
+    st.dataframe(df_display)
+    csv = filtered_df.to_csv(index=False)
+    st.download_button("Download Data as CSV", csv, "style_analysis.csv", "text/csv")
 
 
-# Scatter plot
-# Update the scatter plot section with hover data
-fig_scatter = px.scatter(
-    df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story'])],
-    x='Square Footage',
-    y='Selling Price',
-    color='Style Code',
-    title='Price vs Square Footage by Home Type',
-    labels={
-        'Selling Price': 'Selling Price ($)',
-        'Square Footage': 'Square Footage',
-        'Style Code': 'Home Type',
-        'Listing Number': 'MLS #'  # Add label for MLS number
-    },
-    hover_data={
-        'Listing Number': True,  # Add MLS number to hover
-        'Selling Price': ':$,.0f',  # Format price with comma and no decimals
-        'Square Footage': ':,.0f',  # Format sqft with comma
-        'Style Code': True
-    }
-)
+def show_district_analysis(df):
+    st.title("School District Housing Price Comparison")
 
-# Update layout for better hover display
-fig_scatter.update_traces(
-    hovertemplate="<br>".join([
-        "MLS #: %{customdata[0]}",
-        "Price: %{y:$,.0f}",
-        "SqFt: %{x:,.0f}",
-        "Type: %{customdata[3]}"
-    ])
-)
+    dieringer_data = df[df['District'] == 'Dieringer']
+    sumner_data = df[df['District'] == 'Sumner-Bonney Lake']
 
-st.plotly_chart(fig_scatter, use_container_width=True)
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Number of Dieringer Homes", f"{len(dieringer_data)}")
+        st.metric("Number of Sumner Homes", f"{len(sumner_data)}")
+    with col2:
+        st.metric("Avg Dieringer Price", f"${dieringer_data['Selling Price'].mean():,.0f}")
+        st.metric("Avg Sumner Price", f"${sumner_data['Selling Price'].mean():,.0f}")
+    with col3:
+        dieringer_price_sqft = dieringer_data['Price_per_SqFt'].mean()
+        sumner_price_sqft = sumner_data['Price_per_SqFt'].mean()
+        premium = ((dieringer_price_sqft - sumner_price_sqft) / sumner_price_sqft) * 100
+        st.metric("Avg Dieringer $/SqFt", f"${dieringer_price_sqft:.2f}")
+        st.metric("Avg Sumner $/SqFt", f"${sumner_price_sqft:.2f}")
+        st.metric("Dieringer Premium", f"{premium:.1f}%")
 
-# Raw data viewer
-st.subheader("Raw Data")
-# Create a copy of the dataframe with Listing Number formatted as a plain string
-df_display = df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story'])].sort_values('Selling Price', ascending=False)
-df_display['Listing Number'] = df_display['Listing Number'].astype(str).replace(',', '', regex=True)
-st.dataframe(df_display)
+    col1, col2 = st.columns(2)
+    with col1:
+        fig_box = go.Figure()
+        fig_box.add_trace(go.Box(y=df[df['District'] == 'Dieringer']['Selling Price'],
+                                 name='Dieringer',
+                                 customdata=df[df['District'] == 'Dieringer']['Listing Number'],
+                                 hovertemplate="MLS #: %{customdata}<br>Price: $%{y:,.0f}"))
+        fig_box.add_trace(go.Box(y=df[df['District'] == 'Sumner-Bonney Lake']['Selling Price'],
+                                 name='Sumner-Bonney Lake',
+                                 customdata=df[df['District'] == 'Sumner-Bonney Lake']['Listing Number'],
+                                 hovertemplate="MLS #: %{customdata}<br>Price: $%{y:,.0f}"))
+        fig_box.update_layout(title='Price Distribution by District', yaxis_title='Selling Price ($)')
+        st.plotly_chart(fig_box, use_container_width=True)
 
-# Download button for CSV
-csv = df[df['Style Code'].isin(['10 - 1 Story', '12 - 2 Story'])].to_csv(index=False)
-st.download_button(
-    label="Download Data as CSV",
-    data=csv,
-    file_name="real_estate_analysis.csv",
-    mime="text/csv"
-)
+    with col2:
+        fig_ppsf = go.Figure()
+        fig_ppsf.add_trace(go.Box(y=df[df['District'] == 'Dieringer']['Price_per_SqFt'],
+                                  name='Dieringer',
+                                  customdata=df[df['District'] == 'Dieringer']['Listing Number'],
+                                  hovertemplate="MLS #: %{customdata}<br>$/SqFt: $%{y:.2f}"))
+        fig_ppsf.add_trace(go.Box(y=df[df['District'] == 'Sumner-Bonney Lake']['Price_per_SqFt'],
+                                  name='Sumner-Bonney Lake',
+                                  customdata=df[df['District'] == 'Sumner-Bonney Lake']['Listing Number'],
+                                  hovertemplate="MLS #: %{customdata}<br>$/SqFt: $%{y:.2f}"))
+        fig_ppsf.update_layout(title='Price per SqFt Distribution', yaxis_title='Price per Square Foot ($)')
+        st.plotly_chart(fig_ppsf, use_container_width=True)
+
+    fig_scatter = px.scatter(df, x='Square Footage', y='Selling Price',
+                             color='District', title='Price vs Square Footage',
+                             hover_data={'Listing Number': True, 'Selling Price': ':$,.0f',
+                                         'Square Footage': ':,.0f', 'District': True})
+    st.plotly_chart(fig_scatter, use_container_width=True)
+
+    st.subheader("Raw Data")
+    df_display = df.sort_values('Selling Price', ascending=False)
+    st.dataframe(df_display)
+    csv = df.to_csv(index=False)
+    st.download_button("Download Data as CSV", csv, "district_comparison.csv", "text/csv")
+
+
+def main():
+    tab1, tab2 = st.tabs(["Home Style Analysis", "School District Comparison"])
+
+    with tab1:
+        show_style_analysis(load_style_data())
+    with tab2:
+        show_district_analysis(load_district_data())
+
+
+if __name__ == "__main__":
+    main()
