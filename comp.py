@@ -122,6 +122,19 @@ def show_style_analysis(df):
 def show_district_analysis(df):
     st.title("School District Housing Price Comparison")
 
+    with st.expander("📋 Data Collection Criteria", expanded=True):
+        st.markdown("""
+        ### Search Parameters Used:
+        - **Square Footage:** 2,000 - 3,000 sq ft
+        - **Time Frame:** Sold within last 720 days
+        - **Location:** Sumner-Bonney Lake School District or Dieringer School District
+        """)
+
+    st.warning("""
+        📢 **Important Note:** This analysis represents typical home sales in the area. 
+        Premium or luxury properties may command different premiums than shown here. 
+    """)
+
     dieringer_data = df[df['District'] == 'Dieringer']
     sumner_data = df[df['District'] == 'Sumner-Bonney Lake']
 
