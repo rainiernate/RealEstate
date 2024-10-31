@@ -67,22 +67,56 @@ with col3:
 col1, col2 = st.columns(2)
 
 with col1:
-    # Box plot of prices
+    # Box plot of prices with Listing Number in hover data
     fig_price = go.Figure()
-    fig_price.add_trace(go.Box(y=one_story['Selling Price'], name='Ramblers'))
-    fig_price.add_trace(go.Box(y=two_story['Selling Price'], name='2-Story'))
-    fig_price.update_layout(title='Price Distribution by Home Type',
-                            yaxis_title='Selling Price ($)')
+    fig_price.add_trace(
+        go.Box(
+            y=one_story['Selling Price'],
+            name='Ramblers',
+            customdata=one_story['Listing Number'],  # Add Listing Number as custom data
+            hovertemplate="Listing #: %{customdata}<br>Price: $%{y:,.0f}"  # Use hovertemplate to display
+        )
+    )
+    fig_price.add_trace(
+        go.Box(
+            y=two_story['Selling Price'],
+            name='2-Story',
+            customdata=two_story['Listing Number'],  # Add Listing Number as custom data
+            hovertemplate="Listing #: %{customdata}<br>Price: $%{y:,.0f}"
+        )
+    )
+    fig_price.update_layout(
+        title='Price Distribution by Home Type',
+        yaxis_title='Selling Price ($)'
+    )
     st.plotly_chart(fig_price, use_container_width=True)
 
+
 with col2:
-    # Box plot of price per square foot
+    # Box plot of price per square foot with Listing Number in hover data
     fig_ppsf = go.Figure()
-    fig_ppsf.add_trace(go.Box(y=one_story['Price/SqFt'], name='Ramblers'))
-    fig_ppsf.add_trace(go.Box(y=two_story['Price/SqFt'], name='2-Story'))
-    fig_ppsf.update_layout(title='Price per SqFt Distribution by Home Type',
-                           yaxis_title='Price per Square Foot ($)')
+    fig_ppsf.add_trace(
+        go.Box(
+            y=one_story['Price/SqFt'],
+            name='Ramblers',
+            customdata=one_story['Listing Number'],  # Add Listing Number as custom data
+            hovertemplate="Listing #: %{customdata}<br>$/SqFt: $%{y:.2f}"
+        )
+    )
+    fig_ppsf.add_trace(
+        go.Box(
+            y=two_story['Price/SqFt'],
+            name='2-Story',
+            customdata=two_story['Listing Number'],  # Add Listing Number as custom data
+            hovertemplate="Listing #: %{customdata}<br>$/SqFt: $%{y:.2f}"
+        )
+    )
+    fig_ppsf.update_layout(
+        title='Price per SqFt Distribution by Home Type',
+        yaxis_title='Price per Square Foot ($)'
+    )
     st.plotly_chart(fig_ppsf, use_container_width=True)
+
 
 # Scatter plot
 # Update the scatter plot section with hover data
