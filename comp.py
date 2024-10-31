@@ -4,6 +4,7 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 
+
 st.set_page_config(page_title="Real Estate Analysis", layout="wide")
 
 # Title and description
@@ -20,6 +21,14 @@ with st.expander("📋 Data Collection Criteria", expanded=True):
 
     *Analysis based on MLS data pulled October 2024*
     """)
+
+# Add disclaimer
+st.warning("""
+    📢 **Important Note:** 
+    This analysis represents typical rambler vs 2-story sales in the area. Premium or luxury properties 
+    (like ramblers with detached garages or high-end finishes) may command different premiums than shown here. 
+    This data should be used as a general market reference only, not for specific property valuations.
+""")
 
 
 @st.cache_data
